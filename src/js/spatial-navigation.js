@@ -90,6 +90,40 @@ class SpatialNavigation {
   }
 
   /**
+   * Handles Player Blur.
+   *
+   */
+  handlePlayerBlur() {
+    this.pause();
+  }
+
+  /**
+   * Handles Blur on a child component of the player.
+   *
+   * @param {string|Event|Object} event
+   *        The name of the event, an `Event`, or an object with a key of type set to
+   *        an event name.
+   *
+   * Calls for handling of the Player Blur if:
+   * * Next focused element is not a children of current focused element &
+   *   next focused element is not a children of Player.
+   * * There is no next focused element
+   */
+  handlePlayerChildBlur(event) {
+    const nextFocusedElement = event.relatedTarget;
+    let isChildrenOfPlayer = null;
+
+    if (nextFocusedElement) {
+      isChildrenOfPlayer = Boolean(nextFocusedElement.closest('.video-js'));
+    }
+
+    if (!(event.currentTarget.contains(event.relatedTarget)) && !isChildrenOfPlayer || !nextFocusedElement) {
+      // eslint-disable-next-line
+      window.SpatialNavigation.handlePlayerBlur(event);
+    }
+  }
+
+  /**
    * Gets a set of focusable components.
    *
    * @return {Array}
@@ -99,12 +133,21 @@ class SpatialNavigation {
     const player = this.player;
     const focusableComponents = [];
 
+    function addBlurEventListener(element) {
+      // eslint-disable-next-line
+      const spatialNavigation = window.SpatialNavigation;
+
+      element.el_.removeEventListener('blur', spatialNavigation.handlePlayerChildBlur);
+      element.el_.addEventListener('blur', spatialNavigation.handlePlayerChildBlur);
+    }
+
     function searchForChildrenCandidates(componentsArray) {
       for (const i of componentsArray) {
         if (i.hasOwnProperty('el_') && i.getIsFocusable() && i.getIsAvailableToBeFocused()) {
           focusableComponents.push(i);
+          addBlurEventListener(i);
         }
-        if (i.hasOwnProperty('children_') && i.children_ .length > 0) {
+        if (i.hasOwnProperty('children_') && i.children_.length > 0) {
           searchForChildrenCandidates(i.children_);
         }
       }
@@ -114,6 +157,7 @@ class SpatialNavigation {
       if (key && value && value.hasOwnProperty('el_') && key !== 'player_') {
         if (player[key].getIsFocusable() && player[key].getIsAvailableToBeFocused()) {
           focusableComponents.push(value);
+          addBlurEventListener(value);
         } else if (value.hasOwnProperty('children_') && player[key].children_.length > 0) {
           searchForChildrenCandidates(player[key].children_);
         }
