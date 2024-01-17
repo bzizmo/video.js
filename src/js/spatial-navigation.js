@@ -120,14 +120,36 @@ class SpatialNavigation {
       }
     }
 
+    function searchForElementCandidates(component) {
+      const selectsInsideModal = component.el_.querySelectorAll('select');
+
+      for (const i of selectsInsideModal) {
+        // If is DOM element
+        // console.log(i instanceof Element);
+        if (!(i.disabled)) {
+          focusableComponents.push(i);
+        }
+      }
+    }
+
     for (const [key, value] of Object.entries(player)) {
       if (key && value && value.hasOwnProperty('el_') && key !== 'player_') {
+        // If Component is focusable & available
         if (player[key].getIsFocusable() && player[key].getIsAvailableToBeFocused()) {
           focusableComponents.push(value);
-        } else if ((value.hasOwnProperty('children_') && player[key].children_.length > 0)) {
-          searchForChildrenCandidates(player[key].children_);
-        } else if (value.hasOwnProperty('items') && player[key].items.length > 0) {
-          searchForChildrenCandidates(player[key].items);
+        } else {
+          // If Component is a Modal
+          if (value.hasOwnProperty('closeable_') && value.opened_) {
+            searchForElementCandidates(value);
+          }
+
+          // If Component has children components
+          if ((value.hasOwnProperty('children_') && player[key].children_.length > 0)) {
+            searchForChildrenCandidates(player[key].children_);
+            // If Component has components as items
+          } else if (value.hasOwnProperty('items') && player[key].items.length > 0) {
+            searchForChildrenCandidates(player[key].items);
+          }
         }
       }
     }
