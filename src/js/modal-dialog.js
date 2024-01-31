@@ -466,6 +466,8 @@ class ModalDialog extends Component {
       event.preventDefault();
       this.close();
       return;
+    } else if (keycode.isEventKey(event, 'Enter') && spatialNavigation && this.handleClick) {
+      this.handleClick();
     }
 
     // exit early if it isn't a tab key
