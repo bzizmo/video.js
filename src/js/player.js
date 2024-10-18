@@ -22,7 +22,6 @@ import { bufferedPercent } from './utils/buffer.js';
 import * as stylesheet from './utils/stylesheet.js';
 import FullscreenApi from './fullscreen-api.js';
 import MediaError from './media-error.js';
-import safeParseTuple from 'safe-json-parse/tuple';
 import {merge} from './utils/obj';
 import {silencePromise, isPromise} from './utils/promise';
 import textTrackConverter from './tracks/text-track-list-converter.js';
@@ -52,12 +51,19 @@ import './tracks/text-track-settings.js';
 import './resize-manager.js';
 import './live-tracker.js';
 import './title-bar.js';
+import './transient-button.js';
 
 // Import Html5 tech, at least for disposing the original video tag.
 import './tech/html5.js';
 
 /** @import { TimeRange } from './utils/time' */
 /** @import HtmlTrackElement from './tracks/html-track-element' */
+
+/**
+ * @callback PlayerReadyCallback
+ * @this     {Player}
+ * @returns  {void}
+ */
 
 // The following tech events are simply re-triggered
 // on the player when they happen
@@ -306,7 +312,7 @@ class Player extends Component {
    * @param {Object} [options]
    *        Object of option names and values.
    *
-   * @param {Function} [ready]
+   * @param {PlayerReadyCallback} [ready]
    *        Ready callback function.
    */
   constructor(tag, options, ready) {
@@ -1997,7 +2003,8 @@ class Player extends Component {
   }
 
   /**
-   * Handle a double-click on the media element to enter/exit fullscreen
+   * Handle a double-click on the media element to enter/exit fullscreen,
+   * or exit documentPictureInPicture mode
    *
    * @param {Event} event
    *        the event that caused this function to trigger
@@ -2039,7 +2046,12 @@ class Player extends Component {
         ) {
 
           this.options_.userActions.doubleClick.call(this, event);
-
+        } else if (this.isInPictureInPicture() && !document.pictureInPictureElement) {
+          // Checking the presence of `window.documentPictureInPicture.window` complicates
+          // tests, checking `document.pictureInPictureElement` also works. It wouldn't
+          // be null in regular picture in picture.
+          // Exit picture in picture mode. This gesture can't trigger pip on the main window.
+          this.exitPictureInPicture();
         } else if (this.isFullscreen()) {
           this.exitFullscreen();
         } else {
@@ -3699,6 +3711,43 @@ class Player extends Component {
   }
 
   /**
+   * Add a <source> element to the <video> element.
+   *
+   * @param {string} srcUrl
+   *        The URL of the video source.
+   *
+   * @param {string} [mimeType]
+   *        The MIME type of the video source. Optional but recommended.
+   *
+   * @return {boolean}
+   *         Returns true if the source element was successfully added, false otherwise.
+   */
+  addSourceElement(srcUrl, mimeType) {
+    if (!this.tech_) {
+      return false;
+    }
+
+    return this.tech_.addSourceElement(srcUrl, mimeType);
+  }
+
+  /**
+   * Remove a <source> element from the <video> element by its URL.
+   *
+   * @param {string} srcUrl
+   *        The URL of the source to remove.
+   *
+   * @return {boolean}
+   *         Returns true if the source element was successfully removed, false otherwise.
+   */
+  removeSourceElement(srcUrl) {
+    if (!this.tech_) {
+      return false;
+    }
+
+    return this.tech_.removeSourceElement(srcUrl);
+  }
+
+  /**
    * Begin loading the src data.
    */
   load() {
@@ -5224,13 +5273,12 @@ class Player extends Component {
     // Check if data-setup attr exists.
     if (dataSetup !== null) {
       // Parse options JSON
-      // If empty string, make it a parsable json object.
-      const [err, data] = safeParseTuple(dataSetup || '{}');
-
-      if (err) {
-        log.error(err);
+      try {
+        // If empty string, make it a parsable json object.
+        Object.assign(tagOptions, JSON.parse(dataSetup || '{}'));
+      } catch (e) {
+        log.error('data-setup', e);
       }
-      Object.assign(tagOptions, data);
     }
 
     Object.assign(baseOptions, tagOptions);
@@ -5318,6 +5366,44 @@ class Player extends Component {
     */
     this.trigger('playbackrateschange');
   }
+
+  /**
+   * Reports whether or not a player has a plugin available.
+   *
+   * This does not report whether or not the plugin has ever been initialized
+   * on this player. For that, [usingPlugin]{@link Player#usingPlugin}.
+   *
+   * @method hasPlugin
+   * @param  {string}  name
+   *         The name of a plugin.
+   *
+   * @return {boolean}
+   *         Whether or not this player has the requested plugin available.
+   */
+  /* start-delete-from-build */
+  hasPlugin(name) {
+    return false;
+  }
+  /* end-delete-from-build */
+
+  /**
+   * Reports whether or not a player is using a plugin by name.
+   *
+   * For basic plugins, this only reports whether the plugin has _ever_ been
+   * initialized on this player.
+   *
+   * @method Player#usingPlugin
+   * @param  {string} name
+   *         The name of a plugin.
+   *
+   * @return {boolean}
+   *         Whether or not this player is using the requested plugin.
+   */
+  /* start-delete-from-build */
+  usingPlugin(name) {
+    return false;
+  }
+  /* end-delete-from-build */
 }
 
 /**
@@ -5518,34 +5604,6 @@ TECH_EVENTS_RETRIGGER.forEach(function(event) {
  *
  * @event Player#volumechange
  * @type {Event}
- */
-
-/**
- * Reports whether or not a player has a plugin available.
- *
- * This does not report whether or not the plugin has ever been initialized
- * on this player. For that, [usingPlugin]{@link Player#usingPlugin}.
- *
- * @method Player#hasPlugin
- * @param  {string}  name
- *         The name of a plugin.
- *
- * @return {boolean}
- *         Whether or not this player has the requested plugin available.
- */
-
-/**
- * Reports whether or not a player is using a plugin by name.
- *
- * For basic plugins, this only reports whether the plugin has _ever_ been
- * initialized on this player.
- *
- * @method Player#usingPlugin
- * @param  {string} name
- *         The name of a plugin.
- *
- * @return {boolean}
- *         Whether or not this player is using the requested plugin.
  */
 
 Component.registerComponent('Player', Player);

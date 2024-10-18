@@ -16,6 +16,14 @@ import {merge} from './utils/obj.js';
 /** @import Player from './player' */
 
 /**
+ * A callback to be called if and when the component is ready.
+ * `this` will be the Component instance.
+ *
+ * @callback ReadyCallback
+ * @returns  {void}
+ */
+
+/**
  * Base class for all UI Components.
  * Components are UI objects which represent both a javascript object and an element
  * in the DOM. They can be children of other components, and can have
@@ -24,14 +32,6 @@ import {merge} from './utils/obj.js';
  * Components can also use methods from {@link EventTarget}
  */
 class Component {
-
-  /**
-   * A callback that is called when a component is ready. Does not have any
-   * parameters and any callback value will be ignored.
-   *
-   * @callback ReadyCallback
-   * @this Component
-   */
 
   /**
    * Creates an instance of this class.
@@ -151,7 +151,9 @@ class Component {
    * @param {Function} fn
    *        The function to call with `EventTarget`s
    */
+  /* start-delete-from-build */
   on(type, fn) {}
+  /* end-delete-from-build */
 
   /**
    * Removes an `event listener` for a specific event from an instance of `EventTarget`.
@@ -164,7 +166,9 @@ class Component {
    * @param {Function} [fn]
    *        The function to remove. If not specified, all listeners managed by Video.js will be removed.
    */
+  /* start-delete-from-build */
   off(type, fn) {}
+  /* end-delete-from-build */
 
   /**
    * This function will add an `event listener` that gets triggered only once. After the
@@ -177,7 +181,9 @@ class Component {
    * @param {Function} fn
    *        The function to be called once for each event name.
    */
+  /* start-delete-from-build */
   one(type, fn) {}
+  /* end-delete-from-build */
 
   /**
    * This function will add an `event listener` that gets triggered only once and is
@@ -191,7 +197,9 @@ class Component {
    * @param {Function} fn
    *        The function to be called once for each event name.
    */
+  /* start-delete-from-build */
   any(type, fn) {}
+  /* end-delete-from-build */
 
   /**
    * This function causes an event to happen. This will then cause any `event listeners`
@@ -212,7 +220,9 @@ class Component {
    * @param {Object} [hash]
    *        Optionally extra argument to pass through to an event listener
    */
+  /* start-delete-from-build */
   trigger(event, hash) {}
+  /* end-delete-from-build */
 
   /**
    * Dispose of the `Component` and all child components.
@@ -837,9 +847,6 @@ class Component {
    *
    * @param {ReadyCallback} fn
    *        Function that gets called when the `Component` is ready.
-   *
-   * @return {Component}
-   *         Returns itself; method can be chained.
    */
   ready(fn, sync = false) {
     if (!fn) {
@@ -976,10 +983,10 @@ class Component {
    * - `classToToggle` gets removed when {@link Component#hasClass} would return true.
    *
    * @param  {string} classToToggle
-   *         The class to add or remove based on (@link Component#hasClass}
+   *         The class to add or remove. Passed to DOMTokenList's toggle()
    *
-   * @param  {boolean|Dom~predicate} [predicate]
-   *         An {@link Dom~predicate} function or a boolean
+   * @param  {boolean|Dom.PredicateCallback} [predicate]
+   *         A boolean or function that returns a boolean. Passed to DOMTokenList's toggle().
    */
   toggleClass(classToToggle, predicate) {
     Dom.toggleClass(this.el_, classToToggle, predicate);
@@ -1717,7 +1724,7 @@ class Component {
    */
   requestNamedAnimationFrame(name, fn) {
     if (this.namedRafs_.has(name)) {
-      return;
+      this.cancelNamedAnimationFrame(name);
     }
     this.clearTimersOnDispose_();
 
