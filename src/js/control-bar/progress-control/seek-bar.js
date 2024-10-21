@@ -403,6 +403,13 @@ class SeekBar extends Slider {
   }
 
   /**
+   * Simulate the scrubbing
+   */
+  simulateScrub() {
+    // todo
+  }
+
+  /**
    * Toggles the playback state of the player
    * This gets called when enter or space is used on the seekbar
    *
