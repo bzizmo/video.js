@@ -325,6 +325,9 @@ class Slider extends Component {
         event.stopPropagation();
         this.stepForward();
       } else {
+        if (this.desiredSeekPosition) {
+          this.cancelSeek();
+        }
         super.handleKeyDown(event);
       }
 

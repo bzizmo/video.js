@@ -5567,7 +5567,9 @@ Player.prototype.options_ = {
     horizontalSeek: false
   },
   // Default smooth seeking to false
-  enableSmoothSeeking: false
+  enableSmoothSeeking: false,
+  // Default preview scrubbing to false
+  previewScrubbing: true
 };
 
 TECH_EVENTS_RETRIGGER.forEach(function(event) {

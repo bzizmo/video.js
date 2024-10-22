@@ -42,6 +42,11 @@ class SeekBar extends Slider {
   constructor(player, options) {
     super(player, options);
     this.setEventHandlers_();
+
+    // Initialize the previewScrubbing option
+    this.previewScrubbing = this.player_.options_.previewScrubbing || false;
+    // Initialize properties for deferred seeking
+    this.desiredSeekPosition = null;
   }
 
   /**
@@ -392,14 +397,83 @@ class SeekBar extends Slider {
    * Move more quickly fast forward for keyboard-only users
    */
   stepForward() {
-    this.userSeek_(this.player_.currentTime() + STEP_SECONDS);
+    if (this.previewScrubbing) {
+      // Use desiredSeekPosition if set, else start from currentTime
+      const currentPos = this.desiredSeekPosition !== null ?
+        this.desiredSeekPosition :
+        this.player_.currentTime();
+
+      const newTime = currentPos + STEP_SECONDS;
+
+      this.updateDesiredPosition(newTime);
+    } else {
+      // Immediate seek when previewScrubbing is false
+      this.userSeek_(this.player_.currentTime() + STEP_SECONDS);
+    }
   }
 
   /**
    * Move more quickly rewind for keyboard-only users
    */
   stepBack() {
-    this.userSeek_(this.player_.currentTime() - STEP_SECONDS);
+    if (this.previewScrubbing) {
+      // Use desiredSeekPosition if set, else start from currentTime
+      const currentPos = this.desiredSeekPosition !== null ?
+        this.desiredSeekPosition :
+        this.player_.currentTime();
+
+      const newTime = currentPos - STEP_SECONDS;
+
+      this.updateDesiredPosition(newTime);
+    } else {
+      // Immediate seek when previewScrubbing is false
+      this.userSeek_(this.player_.currentTime() - STEP_SECONDS);
+    }
+  }
+
+  /**
+   * Update the desired seek position and refresh the UI
+   *
+   * @param {number} newTime - The desired time to seek to.
+   */
+  updateDesiredPosition(newTime) {
+    if (!this.player_.paused()) {
+      this.player_.pause();
+    }
+    const duration = this.player_.duration();
+    // Clamp newTime between 0 and duration
+
+    newTime = Math.max(0, Math.min(newTime, duration));
+
+    this.desiredSeekPosition = newTime;
+    // Update the UI
+    this.updateProgressBarWithDesiredPosition(newTime);
+  }
+
+  updateProgressBarWithDesiredPosition(time) {
+    const duration = this.player_.duration();
+    const percent = duration ? (time / duration) : 0;
+
+    // Update the bar's width
+    if (this.bar) {
+      this.bar.el().style.width = (percent * 100).toFixed(2) + '%';
+    }
+
+    // Update ARIA attributes for accessibility
+    this.el_.setAttribute('aria-valuenow', (percent * 100).toFixed(2));
+    this.el_.setAttribute('aria-valuetext', `${Math.floor(this.desiredSeekPosition)} seconds`);
+  }
+
+  confirmSeek() {
+    this.userSeek_(this.desiredSeekPosition);
+    this.desiredSeekPosition = null;
+  }
+
+  cancelSeek() {
+    this.desiredSeekPosition = null;
+    const currentTime = this.player_.currentTime();
+
+    this.updateProgressBarWithDesiredPosition(currentTime);
   }
 
   /**
@@ -411,6 +485,9 @@ class SeekBar extends Slider {
    *
    */
   handleAction(event) {
+    if (this.desiredSeekPosition !== null) {
+      this.confirmSeek();
+    }
     if (this.player_.paused()) {
       this.player_.play();
     } else {
