@@ -441,39 +441,27 @@ class SeekBar extends Slider {
       this.player_.pause();
     }
     const duration = this.player_.duration();
-    // Clamp newTime between 0 and duration
 
     newTime = Math.max(0, Math.min(newTime, duration));
 
     this.desiredSeekPosition = newTime;
+    this.player_.scrubbing(true);
+    this.player_.getCache().currentTime = newTime;
+
     // Update the UI
-    this.updateProgressBarWithDesiredPosition(newTime);
-  }
-
-  updateProgressBarWithDesiredPosition(time) {
-    const duration = this.player_.duration();
-    const percent = duration ? (time / duration) : 0;
-
-    // Update the bar's width
-    if (this.bar) {
-      this.bar.el().style.width = (percent * 100).toFixed(2) + '%';
-    }
-
-    // Update ARIA attributes for accessibility
-    this.el_.setAttribute('aria-valuenow', (percent * 100).toFixed(2));
-    this.el_.setAttribute('aria-valuetext', `${Math.floor(this.desiredSeekPosition)} seconds`);
+    this.update();
   }
 
   confirmSeek() {
+    this.player_.scrubbing(false);
     this.userSeek_(this.desiredSeekPosition);
     this.desiredSeekPosition = null;
   }
 
   cancelSeek() {
+    this.player_.scrubbing(false);
     this.desiredSeekPosition = null;
-    const currentTime = this.player_.currentTime();
-
-    this.updateProgressBarWithDesiredPosition(currentTime);
+    this.update();
   }
 
   /**
