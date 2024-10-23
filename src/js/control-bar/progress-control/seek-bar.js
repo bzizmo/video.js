@@ -462,7 +462,6 @@ class SeekBar extends Slider {
     // Update ARIA attributes for accessibility
     this.el_.setAttribute('aria-valuenow', (percent * 100).toFixed(2));
     this.el_.setAttribute('aria-valuetext', `${Math.floor(this.desiredSeekPosition)} seconds`);
-    this.trigger('previewScrubbingActive');
   }
 
   confirmSeek() {
@@ -475,7 +474,6 @@ class SeekBar extends Slider {
     const currentTime = this.player_.currentTime();
 
     this.updateProgressBarWithDesiredPosition(currentTime);
-    this.trigger('previewScrubbingInactive');
   }
 
   /**
