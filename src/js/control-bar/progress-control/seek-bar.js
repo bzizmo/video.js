@@ -447,9 +447,9 @@ class SeekBar extends Slider {
     this.desiredSeekPosition = newTime;
     this.player_.scrubbing(true);
     this.player_.getCache().currentTime = newTime;
-    this.player_.trigger('timeupdate');
     // Update the UI
     this.update();
+    this.player_.trigger('timeupdate');
   }
 
   confirmSeek() {
